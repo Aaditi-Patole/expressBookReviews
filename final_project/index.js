@@ -58,28 +58,40 @@ app.use("/customer/auth/*", function auth(req,res,next){
 });
 
 // Login endpoint
-app.post("/login", (req, res) => {
+app.post("/customer/login", (req, res) => {
     const username = req.body.username;
     const password = req.body.password;
-    // Check if username or password is missing
+
+    // Validate input
     if (!username || !password) {
-        return res.status(404).json({ message: "Error logging in" });
+        return res.status(400).json({ message: "Username and password are required" });
     }
-    // Authenticate user
-    if (authenticatedUser(username, password)) {
-        // Generate JWT access token
-        let accessToken = jwt.sign({
-            data: password
-        }, 'access', { expiresIn: 60 * 60 });
-        // Store access token and username in session
-        req.session.authorization = {
-            accessToken, username
-        }
-        return res.status(200).send("User successfully logged in");
-    } else {
-        return res.status(208).json({ message: "Invalid Login. Check username and password" });
+
+    // Check credentials using your authenticatedUser() function
+    if (!authenticatedUser(username, password)) {
+        return res.status(401).json({ message: "Invalid username or password" });
     }
+
+    // Generate JWT token
+    let accessToken = jwt.sign(
+        { username: username },
+        "access",
+        { expiresIn: "1h" }
+    );
+
+    // Save token in session
+    req.session.authorization = {
+        accessToken,
+        username
+    };
+
+    return res.status(200).json({
+        message: "Login successful!",
+        token: accessToken
+    });
+    
 });
+
 
 // Register a new user
 app.post("/register", (req, res) => {
